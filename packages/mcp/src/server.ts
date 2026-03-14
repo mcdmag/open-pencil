@@ -14,7 +14,8 @@ import {
   SkiaRenderer,
   collectFontKeys,
   initFontService,
-  loadFont
+  loadFont,
+  markFontLoaded
 } from '@open-pencil/core'
 
 import type { ToolDef, ParamDef, ParamType, ExportFormat } from '@open-pencil/core'
@@ -97,6 +98,25 @@ export function createServer(version: string, options: CreateServerOptions = {})
 
       // Initialize font provider and load fonts used by the exported nodes
       await renderer.loadFonts()
+
+      // Pre-load bundled Inter font from disk (fetch('/Inter-Regular.ttf') fails in Node.js)
+      const { existsSync: exists } = await import('node:fs')
+      const { dirname, join } = await import('node:path')
+      const { fileURLToPath } = await import('node:url')
+      const mcpDir = dirname(fileURLToPath(import.meta.url))
+      const fontsDir = join(mcpDir, '..', 'fonts')
+      const interPath = join(fontsDir, 'Inter-Regular.ttf')
+      if (exists(interPath)) {
+        const fontData = await readFile(interPath)
+        const buffer = fontData.buffer.slice(fontData.byteOffset, fontData.byteOffset + fontData.byteLength)
+        markFontLoaded('Inter', 'Regular', buffer)
+        // Register the typeface directly with the renderer
+        const typeface = ck.Typeface.MakeFreeTypeFaceFromData(buffer)
+        if (typeface && renderer.fontProvider) {
+          renderer.fontProvider.registerFont(buffer, 'Inter')
+        }
+      }
+
       const pageId = currentPageId ?? g.getPages()[0].id
       const fontKeys = collectFontKeys(g, nodeIds)
       for (const [family, style] of fontKeys) {
