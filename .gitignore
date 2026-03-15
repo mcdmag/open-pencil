@@ -41,6 +41,7 @@ patches/skia-webgpu/
 
 Caddyfile.dev
 components.d.ts
+vue-stream-markdown/
 
 # cue:managed-ignore
 # Transient Cue runtime files (sessions, state, logs, search cache)
