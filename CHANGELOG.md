@@ -15,7 +15,8 @@
 
 - `batch` MCP tool — execute multiple operations in a single call with `$N` references between operations (max 100). Stops on first error, returns partial results.
 - Inline style properties on `create_shape`: `fill`, `stroke`, `stroke_weight`, `radius`, `text`, `font_family`, `font_size`, `font_style` — create styled nodes in one call
-- ACP agent support — use Claude Code, Codex, or Gemini CLI as AI assistants in the desktop chat panel
+- ACP agent support — use Claude Code, Codex, or Gemini CLI as AI assistants in the desktop chat panel. Requires `@zed-industries/claude-agent-acp` and `mcp__open-pencil` permission in `~/.claude/settings.json`
+- Permission confirmation dialog — ACP agents request user approval for file/shell operations, MCP design tools auto-approved
 - Unified MCP server — single HTTP + WebSocket proxy replaces Vite SSR bridge
 - Grid layout in AI chat — JSX renderer supports `grid`, `columns`, `rows`, `gap` props with child positioning (`colStart`, `rowStart`, `colSpan`, `rowSpan`) and auto-height grids
 - Configurable max output tokens in AI provider settings (default 16384)
