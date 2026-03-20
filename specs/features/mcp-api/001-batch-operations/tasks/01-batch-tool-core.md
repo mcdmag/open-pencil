@@ -11,16 +11,16 @@ Create the core `batch` tool that accepts an array of operations, resolves `$N` 
 
 ### Create `packages/core/src/tools/batch.ts`
 
-- [ ] Create the new file `packages/core/src/tools/batch.ts`
-- [ ] Import `ALL_TOOLS` from `./registry`, and type-only imports: `type { ToolDef }` from `./schema` and `type { FigmaAPI }` from `../figma-api`. Do NOT import `defineTool` — `batch` is not registered via `defineTool` since it needs a custom Zod schema in the MCP server.
-- [ ] Define a `resolveRefs` function that:
+- [x] Create the new file `packages/core/src/tools/batch.ts`
+- [x] Import `ALL_TOOLS` from `./registry`, and type-only imports: `type { ToolDef }` from `./schema` and `type { FigmaAPI }` from `../figma-api`. Do NOT import `defineTool` — `batch` is not registered via `defineTool` since it needs a custom Zod schema in the MCP server.
+- [x] Define a `resolveRefs` function that:
   - Takes an `args` object and a `results` array
   - Recursively walks all string values in the args object
   - For exact matches of `$N` (where N is a non-negative integer): replaces with `results[N].id`
   - For embedded matches like `"prefix-$0-suffix"`: replaces the `$N` substring with `results[N].id`
   - Throws an error if N >= results.length (forward reference) or if results[N] has no `id` field
   - Returns a new args object with all references resolved (does not mutate the original)
-- [ ] Define the `batch` tool using the existing tool execute pattern (NOT `defineTool` — it will be registered manually in the MCP server due to complex schema):
+- [x] Define the `batch` tool using the existing tool execute pattern (NOT `defineTool` — it will be registered manually in the MCP server due to complex schema):
   ```ts
   export interface BatchOperation {
     tool: string
@@ -44,7 +44,7 @@ Create the core `batch` tool that accepts an array of operations, resolves `$N` 
     options?: BatchOptions
   ): Promise<BatchResult>
   ```
-- [ ] Implement `executeBatch`:
+- [x] Implement `executeBatch`:
   - Build a tool lookup map from `ALL_TOOLS` if not provided via `options.toolMap`
   - **Enforce `maxOperations` (default 100)**: if `operations.length > maxOperations`, return error immediately. This prevents denial-of-service from excessively large batches.
   - **Enforce `disabledTools`**: before dispatching each operation, check if `op.tool` is in `options.disabledTools`. If so, return an error at that index with message `"Tool '{tool}' is disabled"`. This is the core-layer defense against privilege escalation (e.g., `eval` when disabled).
@@ -55,15 +55,15 @@ Create the core `batch` tool that accepts an array of operations, resolves `$N` 
   - If `execute()` throws an exception, catch it and return the error in the same format: `{ results: [...completed], error: { index, tool, message: e.message } }`
   - On success, append result to results array and continue
   - Return `{ results }` when all operations complete
-- [ ] Export `executeBatch`, `BatchOperation`, `BatchResult`, `BatchOptions`, and `resolveRefs` from the file
+- [x] Export `executeBatch`, `BatchOperation`, `BatchResult`, `BatchOptions`, and `resolveRefs` from the file
 
 ### Register in the tool index
 
-- [ ] In `packages/core/src/tools/index.ts`, add: `export { executeBatch, resolveRefs } from './batch'` and `export type { BatchOperation, BatchResult, BatchOptions } from './batch'`
+- [x] In `packages/core/src/tools/index.ts`, add: `export { executeBatch, resolveRefs } from './batch'` and `export type { BatchOperation, BatchResult, BatchOptions } from './batch'`
 
 ### Tests
 
-- [ ] Create `tests/engine/batch.test.ts` following the pattern in `tests/engine/tools.test.ts`:
+- [x] Create `tests/engine/batch.test.ts` following the pattern in `tests/engine/tools.test.ts`:
   ```ts
   import { describe, expect, test } from 'bun:test'
   import { ALL_TOOLS, FigmaAPI, SceneGraph } from '@open-pencil/core'
@@ -76,7 +76,7 @@ Create the core `batch` tool that accepts an array of operations, resolves `$N` 
     return { graph, figma }
   }
   ```
-- [ ] Add the following test cases:
+- [x] Add the following test cases:
   - **Basic batch execution**: batch of 2 create_shape operations, verify both results have IDs
   - **$N reference resolution**: create_shape then set_fill with `id: "$0"`, verify fill is applied to the created node
   - **Nested $N in parent_id**: create_shape (parent), create_shape with `parent_id: "$0"`, verify parent-child relationship
@@ -89,9 +89,9 @@ Create the core `batch` tool that accepts an array of operations, resolves `$N` 
   - **Disabled tool rejected**: batch with `disabledTools: new Set(["eval"])` and an eval operation, verify error with "disabled" message
   - **Recursive batch blocked**: batch containing `tool: "batch"`, verify error
   - **maxOperations enforced**: batch with 101 operations and `maxOperations: 100`, verify error before any execution
-- [ ] Run `bun test tests/engine/batch.test.ts` and confirm all 12 tests pass
+- [x] Run `bun test tests/engine/batch.test.ts` and confirm all 12 tests pass
 
 ## Verification
 
-- [ ] `bun test tests/engine/batch.test.ts` — all 12 tests pass
-- [ ] `bun test` — no regressions across the full test suite
+- [x] `bun test tests/engine/batch.test.ts` — all 12 tests pass
+- [x] `bun test` — no regressions across the full test suite

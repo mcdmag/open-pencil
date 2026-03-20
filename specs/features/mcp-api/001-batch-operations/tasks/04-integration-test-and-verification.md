@@ -11,7 +11,7 @@ Run the full test suite, verify all Definition of Done items, and confirm no reg
 
 ### Integration test
 
-- [ ] Add an integration test to `tests/engine/batch.test.ts` (inside a `describe('batch integration')` block) that simulates a realistic mockup workflow. This test exercises inline styles from Task 00 within a batch from Task 01:
+- [x] Add an integration test to `tests/engine/batch.test.ts` (inside a `describe('batch integration')` block) that simulates a realistic mockup workflow. This test exercises inline styles from Task 00 within a batch from Task 01:
   ```ts
   test('full card mockup in a single batch call', async () => {
     const { figma } = setup()
@@ -39,26 +39,26 @@ Run the full test suite, verify all Definition of Done items, and confirm no reg
 
 ### Full test suite
 
-- [ ] Run `bun test` and confirm ALL tests pass with no regressions
-- [ ] Run `bun test tests/engine/batch.test.ts` and confirm all batch tests pass
-- [ ] Run `bun test tests/engine/create-shape-inline.test.ts` and confirm all inline style tests pass
-- [ ] Run `bun test tests/engine/mcp-server.test.ts` and confirm all MCP server tests pass
-- [ ] Run `bun test tests/engine/tools.test.ts` and confirm all tool definition tests pass
+- [x] Run `bun test` and confirm ALL tests pass with no regressions
+- [x] Run `bun test tests/engine/batch.test.ts` and confirm all batch tests pass
+- [x] Run `bun test tests/engine/create-shape-inline.test.ts` and confirm all inline style tests pass
+- [x] Run `bun test tests/engine/mcp-server.test.ts` and confirm all MCP server tests pass
+- [x] Run `bun test tests/engine/tools.test.ts` and confirm all tool definition tests pass
 
 ### Definition of Done verification
 
-- [ ] `batch` tool is registered in MCP server: run `bun test tests/engine/mcp-server.test.ts` — the "batch tool is listed" test passes
-- [ ] `create_shape` accepts inline styles: run `bun test tests/engine/create-shape-inline.test.ts` — all tests pass
-- [ ] `$N` references resolve correctly: run `bun test tests/engine/batch.test.ts` — reference tests pass
-- [ ] Batch stops on first error: run `bun test tests/engine/batch.test.ts` — error handling tests pass
-- [ ] README.md updated: grep for "batch" in README.md
-- [ ] CHANGELOG.md updated: grep for "batch" in CHANGELOG.md
+- [x] `batch` tool is registered in MCP server: run `bun test tests/engine/mcp-server.test.ts` — the "batch tool is listed" test passes
+- [x] `create_shape` accepts inline styles: run `bun test tests/engine/create-shape-inline.test.ts` — all tests pass
+- [x] `$N` references resolve correctly: run `bun test tests/engine/batch.test.ts` — reference tests pass
+- [x] Batch stops on first error: run `bun test tests/engine/batch.test.ts` — error handling tests pass
+- [x] README.md updated: grep for "batch" in README.md
+- [x] CHANGELOG.md updated: grep for "batch" in CHANGELOG.md
 
 ### TypeScript check
 
-- [ ] Run `cd packages/core && npx tsc --noEmit` — no errors
-- [ ] Note: `packages/mcp/tsconfig.json` has `"noCheck": true`, so `npx tsc --noEmit` is a no-op there. Type errors in packages/mcp are caught by `bun test` at runtime instead.
+- [x] Run `cd packages/core && npx tsc --noEmit` — no errors
+- [x] Note: `packages/mcp/tsconfig.json` has `"noCheck": true`, so `npx tsc --noEmit` is a no-op there. Type errors in packages/mcp are caught by `bun test` at runtime instead.
 
 ## Verification
 
-- [ ] ALL of the above checks pass — feature is complete
+- [x] ALL of the above checks pass — feature is complete
