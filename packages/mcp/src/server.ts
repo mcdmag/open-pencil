@@ -13,7 +13,7 @@ import {
   SceneGraph,
   headlessRenderNodes
 } from '@open-pencil/core'
-import { exportImage } from '@open-pencil/core/tools'
+import { exportImage, executeBatch } from '@open-pencil/core/tools'
 
 import type { ToolDef, ParamDef, ParamType, ExportFormat } from '@open-pencil/core'
 
@@ -205,6 +205,33 @@ export function createServer(version: string, options: CreateServerOptions = {})
     if (!enableEval && tool.name === 'eval') continue
     registerTool(tool)
   }
+
+  // Build disabled set for batch tool
+  const disabledTools = new Set<string>()
+  if (!enableEval) disabledTools.add('eval')
+
+  register(
+    'batch',
+    {
+      description: 'Execute multiple tools in a single call. Use $N references (e.g. "$0") to use the ID from operation N\'s result. Stops on first error and returns partial results. Max 100 operations.',
+      inputSchema: z.object({
+        operations: z.array(
+          z.object({
+            tool: z.string().describe('Tool name (e.g. "create_shape", "set_fill")'),
+            args: z.record(z.unknown()).describe('Tool arguments. Use "$N" to reference the id from operation N\'s result.')
+          })
+        ).min(1).max(100).describe('Array of operations to execute sequentially (max 100)')
+      })
+    },
+    async ({ operations }: { operations: { tool: string; args: Record<string, unknown> }[] }) => {
+      try {
+        const result = await executeBatch(makeFigma(), operations, { disabledTools })
+        return ok(result)
+      } catch (e) {
+        return fail(e)
+      }
+    }
+  )
 
   register(
     'get_codegen_prompt',

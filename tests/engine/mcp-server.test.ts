@@ -401,6 +401,80 @@ describe('MCP server', () => {
     expect(names).toContain('export_image_file')
   })
 
+  test('batch tool is listed in tools', async () => {
+    const { tools } = await client.listTools()
+    const names = tools.map((t) => t.name)
+    expect(names).toContain('batch')
+  })
+
+  test('batch creates multiple nodes', async () => {
+    await client.callTool({ name: 'new_document', arguments: {} })
+    const result = await client.callTool({
+      name: 'batch',
+      arguments: {
+        operations: [
+          { tool: 'create_shape', args: { type: 'FRAME', x: 0, y: 0, width: 100, height: 100, name: 'A' } },
+          { tool: 'create_shape', args: { type: 'RECTANGLE', x: 10, y: 10, width: 50, height: 50, name: 'B' } }
+        ]
+      }
+    })
+    const data = parseResult(result) as { results: { id: string }[] }
+    expect(data.results).toHaveLength(2)
+    expect(data.results[0].id).toBeTruthy()
+    expect(data.results[1].id).toBeTruthy()
+  })
+
+  test('batch resolves $N references', async () => {
+    await client.callTool({ name: 'new_document', arguments: {} })
+    const result = await client.callTool({
+      name: 'batch',
+      arguments: {
+        operations: [
+          { tool: 'create_shape', args: { type: 'RECTANGLE', x: 0, y: 0, width: 100, height: 100 } },
+          { tool: 'set_fill', args: { id: '$0', color: '#ff0000' } }
+        ]
+      }
+    })
+    const data = parseResult(result) as { results: unknown[]; error?: unknown }
+    expect(data.error).toBeUndefined()
+    expect(data.results).toHaveLength(2)
+  })
+
+  test('batch returns error on failure', async () => {
+    await client.callTool({ name: 'new_document', arguments: {} })
+    const result = await client.callTool({
+      name: 'batch',
+      arguments: {
+        operations: [
+          { tool: 'set_fill', args: { id: 'nonexistent', color: '#ff0000' } }
+        ]
+      }
+    })
+    const data = parseResult(result) as { results: unknown[]; error: { index: number } }
+    expect(data.error).toBeDefined()
+    expect(data.error.index).toBe(0)
+  })
+
+  test('batch rejects eval when disabled', async () => {
+    const custom = await createLinkedClient({ enableEval: false })
+    try {
+      await custom.client.callTool({ name: 'new_document', arguments: {} })
+      const result = await custom.client.callTool({
+        name: 'batch',
+        arguments: {
+          operations: [
+            { tool: 'eval', args: { code: '1+1' } }
+          ]
+        }
+      })
+      const data = parseResult(result) as { error: { tool: string; message: string } }
+      expect(data.error).toBeDefined()
+      expect(data.error.message).toContain('disabled')
+    } finally {
+      await custom.close()
+    }
+  })
+
   test('createServer option fileRoot restricts open_file and save_file paths', async () => {
     const rootDir = await mkdtemp(join(tmpdir(), 'openpencil-mcp-root-'))
     const insidePath = join(rootDir, 'inside.fig')
