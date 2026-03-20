@@ -11,7 +11,7 @@ export const createShape = defineTool({
   name: 'create_shape',
   mutates: true,
   description:
-    'Create a shape on the canvas. Use FRAME for containers/cards, RECTANGLE for solid blocks, ELLIPSE for circles, TEXT for labels, SECTION for page sections.',
+    'Create a shape on the canvas. Accepts optional inline styles: fill, stroke, radius, text, font. Use FRAME for containers/cards, RECTANGLE for solid blocks, ELLIPSE for circles, TEXT for labels, SECTION for page sections.',
   params: {
     type: {
       type: 'string',
@@ -24,7 +24,15 @@ export const createShape = defineTool({
     width: { type: 'number', description: 'Width in pixels', required: true, min: 1 },
     height: { type: 'number', description: 'Height in pixels', required: true, min: 1 },
     name: { type: 'string', description: 'Node name shown in layers panel' },
-    parent_id: { type: 'string', description: 'Parent node ID to nest inside' }
+    parent_id: { type: 'string', description: 'Parent node ID to nest inside' },
+    fill: { type: 'color', description: 'Fill color (hex)' },
+    stroke: { type: 'color', description: 'Stroke color (hex)' },
+    stroke_weight: { type: 'number', description: 'Stroke weight' },
+    radius: { type: 'number', description: 'Corner radius', min: 0 },
+    text: { type: 'string', description: 'Text content (TEXT nodes only)' },
+    font_family: { type: 'string', description: 'Font family name' },
+    font_size: { type: 'number', description: 'Font size', min: 1 },
+    font_style: { type: 'string', description: 'Font style (e.g. Bold, Regular)' }
   },
   execute: (figma, args) => {
     const parentId = args.parent_id
@@ -45,6 +53,37 @@ export const createShape = defineTool({
     node.resize(args.width, args.height)
     if (args.name) node.name = args.name
     if (parent) parent.appendChild(node)
+
+    // Inline style application (following create_vector pattern)
+    if (args.fill) {
+      node.fills = [{ type: 'SOLID', color: parseColor(args.fill), opacity: 1, visible: true }]
+    }
+    if (args.stroke) {
+      node.strokes = [{
+        color: parseColor(args.stroke),
+        weight: args.stroke_weight ?? 1,
+        opacity: 1,
+        visible: true,
+        align: 'INSIDE' as const
+      }]
+    }
+    if (args.radius !== undefined) {
+      node.cornerRadius = args.radius
+    }
+    if (args.text && args.type === 'TEXT') {
+      node.characters = args.text
+    }
+    if (args.font_size !== undefined) {
+      node.fontSize = args.font_size
+    }
+    if (args.font_family || args.font_style) {
+      const current = node.fontName
+      node.fontName = {
+        family: args.font_family ?? current.family,
+        style: args.font_style ?? current.style
+      }
+    }
+
     return nodeSummary(node)
   }
 })
