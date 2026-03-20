@@ -11,15 +11,29 @@ Run the full test suite, verify all Definition of Done items, and confirm no reg
 
 ### Integration test
 
-- [ ] Add an integration test to `tests/engine/batch.test.ts` that simulates a realistic mockup workflow:
-  ```
-  Create a card mockup in a single batch call:
-  1. create_shape FRAME (card container) with fill "#161b22" and radius 12
-  2. create_shape TEXT (title) with parent_id "$0", text "Dashboard", font_family "Inter", font_size 24
-  3. create_shape FRAME (button) with parent_id "$0", fill "#238636", radius 8
-  4. create_shape TEXT (button label) with parent_id "$2", text "Get Started", font_size 14
-  5. set_layout on "$0" with direction VERTICAL, spacing 16, padding 24
-  6. set_layout on "$2" with direction HORIZONTAL, padding_horizontal 16, padding_vertical 8, align CENTER
+- [ ] Add an integration test to `tests/engine/batch.test.ts` (inside a `describe('batch integration')` block) that simulates a realistic mockup workflow. This test exercises inline styles from Task 00 within a batch from Task 01:
+  ```ts
+  test('full card mockup in a single batch call', async () => {
+    const { figma } = setup()
+    const result = await executeBatch(figma, [
+      { tool: 'create_shape', args: { type: 'FRAME', x: 0, y: 0, width: 440, height: 580, fill: '#161b22', radius: 12 } },
+      { tool: 'create_shape', args: { type: 'TEXT', parent_id: '$0', x: 32, y: 32, width: 200, height: 30, text: 'Dashboard', font_family: 'Inter', font_size: 24 } },
+      { tool: 'create_shape', args: { type: 'FRAME', parent_id: '$0', x: 32, y: 80, width: 376, height: 48, fill: '#238636', radius: 8 } },
+      { tool: 'create_shape', args: { type: 'TEXT', parent_id: '$2', x: 0, y: 0, width: 100, height: 20, text: 'Get Started', font_size: 14 } },
+      { tool: 'set_layout', args: { id: '$0', direction: 'VERTICAL', spacing: 16, padding: 24 } },
+      { tool: 'set_layout', args: { id: '$2', direction: 'HORIZONTAL', padding_horizontal: 16, padding_vertical: 8, align: 'CENTER' } }
+    ])
+    expect(result.error).toBeUndefined()
+    expect(result.results).toHaveLength(6)
+    // Verify parent-child: card frame has title, button as children
+    const cardId = (result.results[0] as any).id
+    const card = figma.getNodeById(cardId)!
+    expect(card.children.length).toBeGreaterThanOrEqual(2)
+    // Verify button has label as child
+    const buttonId = (result.results[2] as any).id
+    const button = figma.getNodeById(buttonId)!
+    expect(button.children.some(c => c.id === (result.results[3] as any).id)).toBe(true)
+  })
   ```
   Verify: all 6 operations succeed, parent-child relationships are correct, styles are applied.
 
@@ -43,7 +57,7 @@ Run the full test suite, verify all Definition of Done items, and confirm no reg
 ### TypeScript check
 
 - [ ] Run `cd packages/core && npx tsc --noEmit` — no errors
-- [ ] Run `cd packages/mcp && npx tsc --noEmit` — no errors
+- [ ] Note: `packages/mcp/tsconfig.json` has `"noCheck": true`, so `npx tsc --noEmit` is a no-op there. Type errors in packages/mcp are caught by `bun test` at runtime instead.
 
 ## Verification
 

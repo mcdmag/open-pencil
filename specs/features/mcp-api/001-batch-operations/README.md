@@ -29,6 +29,8 @@ The existing `render` JSX tool already handles complex tree creation. This featu
 | Partial failure state | Stop-on-first-error returns partial results |
 | Large schema token cost in LLM context | Batch tool is one tool vs. describing 70+ individually |
 | Reference resolution bugs | Comprehensive test coverage for `$N` resolution |
+| Unbounded batch size / DoS | Max 100 operations enforced at Zod schema and core layer |
+| Privilege escalation via batch | `disabledTools` set blocks `eval` (and future restricted tools); recursive `batch` calls blocked |
 
 ## Definition of Done
 

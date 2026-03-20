@@ -13,9 +13,10 @@ Generic verification steps that apply to ALL tasks in this feature.
 ## Verification Commands
 
 ```bash
-# TypeScript check
+# TypeScript check — packages/core only
+# NOTE: packages/mcp/tsconfig.json has "noCheck": true, so tsc --noEmit is a no-op there.
+# Type-checking for packages/mcp is implicitly done by Bun at test/build time.
 cd packages/core && npx tsc --noEmit
-cd packages/mcp && npx tsc --noEmit
 
 # Run all tests
 bun test

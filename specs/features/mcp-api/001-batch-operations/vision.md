@@ -50,12 +50,22 @@ The `batch` tool looks up tools by name from `ALL_TOOLS` and calls their `execut
 - New tools added in the future are automatically supported
 
 ```ts
-// Simplified batch execution loop
-const toolMap = new Map(ALL_TOOLS.map(t => [t.name, t]))
+// Simplified batch execution loop (see batch.ts for full implementation)
+export async function executeBatch(
+  figma: FigmaAPI,
+  operations: BatchOperation[],
+  options?: BatchOptions  // { toolMap?, disabledTools?, maxOperations? }
+): Promise<BatchResult>
+
+// Core loop:
+const toolMap = options?.toolMap ?? new Map(ALL_TOOLS.map(t => [t.name, t]))
 for (const op of operations) {
+  if (options?.disabledTools?.has(op.tool)) return error(...)
   const tool = toolMap.get(op.tool)
   const args = resolveRefs(op.args, results)
-  results.push(await tool.execute(figma, args))
+  const result = await tool.execute(figma, args)
+  if (result?.error) return { results, error: { index, tool: op.tool, message: result.error } }
+  results.push(result)
 }
 ```
 
@@ -111,6 +121,9 @@ The `batch` tool requires a custom Zod schema in the MCP server because its `ope
 ## Security Considerations
 
 - The `batch` tool only dispatches to tools in `ALL_TOOLS` — no arbitrary code execution
-- If `eval` is disabled via `enableEval: false`, `batch` operations referencing `eval` are rejected
-- `$N` references are validated (bounds checking, type checking)
+- If `eval` is disabled via `enableEval: false`, `batch` operations referencing `eval` are rejected. This is enforced at **two layers**: (1) the MCP server passes a `disabledTools` set to `executeBatch`, and (2) `executeBatch` checks `disabledTools` before dispatching each operation. Defense-in-depth prevents bypass if `executeBatch` is called outside the MCP server.
+- `$N` references are validated (bounds checking, type checking) — they resolve only to `.id` fields from prior results (system-generated node IDs), preventing injection
+- Recursive `batch` calls are blocked — `executeBatch` rejects `tool: "batch"` to prevent infinite loops
+- Batch size is capped at 100 operations (Zod schema `.max(100)` + `maxOperations` in core) to prevent denial-of-service
+- Server-only tools (`open_file`, `save_file`, `new_document`, `export_image_file`) are NOT in `ALL_TOOLS` and therefore cannot be dispatched via batch — this is an intentional security boundary. The `toolMap` parameter of `executeBatch` must never be populated with server-only tools that have their own authorization logic (e.g., `resolveAndCheckPath` file sandboxing).
 - No new file I/O paths — all file access goes through existing tools
