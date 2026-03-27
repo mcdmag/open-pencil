@@ -236,8 +236,22 @@ export function startServer(options: ServerOptions = {}) {
   // --- MCP Streamable HTTP ---
 
   type MCPTransport = { handleRequest: (r: Request) => Promise<Response> }
-  const mcpSessions = new Map<string, MCPTransport>()
+  interface MCPSessionEntry {
+    transport: MCPTransport
+    lastActivity: number
+  }
+  const mcpSessions = new Map<string, MCPSessionEntry>()
   const MAX_MCP_SESSIONS = 10
+  const SESSION_TTL_MS = 5 * 60 * 1000 // 5 minutes idle TTL
+
+  function evictStaleSessions() {
+    const now = Date.now()
+    for (const [id, entry] of mcpSessions) {
+      if (now - entry.lastActivity > SESSION_TTL_MS) {
+        mcpSessions.delete(id)
+      }
+    }
+  }
 
   function createMCPSession(id: string): MCPTransport {
     const mcpServer = new McpServer({ name: 'open-pencil', version: MCP_VERSION })
@@ -327,7 +341,7 @@ export function startServer(options: ServerOptions = {}) {
       sessionIdGenerator: () => id
     })
     void mcpServer.connect(transport)
-    mcpSessions.set(id, transport)
+    mcpSessions.set(id, { transport, lastActivity: Date.now() })
     return transport
   }
 
@@ -341,13 +355,19 @@ export function startServer(options: ServerOptions = {}) {
     }
     const sessionId = c.req.header('mcp-session-id') ?? undefined
     const existing = sessionId ? mcpSessions.get(sessionId) : undefined
+    if (existing) {
+      existing.lastActivity = Date.now()
+    }
+    if (!existing && mcpSessions.size >= MAX_MCP_SESSIONS) {
+      evictStaleSessions()
+    }
     if (!existing && mcpSessions.size >= MAX_MCP_SESSIONS) {
       return c.json(
         { error: 'Too many active MCP sessions' },
         { status: 503, headers: { 'Retry-After': '5' } }
       )
     }
-    const transport = existing ?? createMCPSession(sessionId ?? randomUUID())
+    const transport = existing?.transport ?? createMCPSession(sessionId ?? randomUUID())
     const response = await transport.handleRequest(c.req.raw)
     if (c.req.method === 'DELETE' && sessionId) {
       mcpSessions.delete(sessionId)
